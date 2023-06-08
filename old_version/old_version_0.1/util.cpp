@@ -65,6 +65,10 @@ ssize_t writen(int fd, void *buff, size_t n)
 
 void handle_for_sigpipe()
 {
+    /*
+    处理SIGPIPE信号，当客户端关闭时，服务端第一个写会正常返回，第二次写就会引起发送SISPIPE信号。
+    默认的SISPIPE信号时终止进程，这里要设置成忽略这个信号。
+    */
     struct sigaction sa;
     memset(&sa, '\0', sizeof(sa));
     sa.sa_handler = SIG_IGN;

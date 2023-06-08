@@ -46,7 +46,7 @@ int socket_bind_listen(int port)
     if((listen_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
         return -1;
 
-    // 消除bind时"Address already in use"错误
+    // 当TCP重启时，消除bind时"Address already in use"错误
     int optval = 1;
     if(setsockopt(listen_fd, SOL_SOCKET,  SO_REUSEADDR, &optval, sizeof(optval)) == -1)
         return -1;

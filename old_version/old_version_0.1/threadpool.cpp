@@ -29,6 +29,7 @@ threadpool_t *threadpool_create(int thread_count, int queue_size, int flags)
         /* Initialize mutex and conditional variable first */
         if((pthread_mutex_init(&(pool->lock), NULL) != 0) ||
            (pthread_cond_init(&(pool->notify), NULL) != 0) ||
+           //因为pool是动态分配的，所以需要使用init函数。
            (pool->threads == NULL) ||
            (pool->queue == NULL)) 
         {
@@ -38,6 +39,8 @@ threadpool_t *threadpool_create(int thread_count, int queue_size, int flags)
         /* Start worker threads */
         for(i = 0; i < thread_count; i++) {
             if(pthread_create(&(pool->threads[i]), NULL, threadpool_thread, (void*)pool) != 0) 
+            //将线程池自身的指针传进去，从而可以访问任务函数队列
+            //如果某个线程创建失败，则调用destroy函数
             {
                 threadpool_destroy(pool, 0);
                 return NULL;
@@ -132,6 +135,7 @@ int threadpool_destroy(threadpool_t *pool, int flags)
         /* Wake up all worker threads */
         if((pthread_cond_broadcast(&(pool->notify)) != 0) ||
            (pthread_mutex_unlock(&(pool->lock)) != 0)) {
+            //这里唤醒所有线程是为了让工作线程去去自行退出结束线程
             err = THREADPOOL_LOCK_FAILURE;
             break;
         }
@@ -184,7 +188,7 @@ static void *threadpool_thread(void *threadpool)
     threadpool_t *pool = (threadpool_t *)threadpool;
     threadpool_task_t task;
 
-    for(;;)
+    while(true)
     {
         /* Lock must be taken to wait on conditional variable */
         pthread_mutex_lock(&(pool->lock));
